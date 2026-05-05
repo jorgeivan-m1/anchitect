@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Mapa de barrios de Popayán por comuna</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+        }
+
+        /* Variables de tema claro (por defecto) */
+        :root {
+            --bg-body: #f3f4f6;
+            --bg-card: #ffffff;
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --input-bg: #ffffff;
+            --input-border: #d1d5db;
+            --btn-primary-bg: #2563eb;
+            --btn-primary-hover: #1d4ed8;
+            --btn-primary-text: #ffffff;
+            --btn-secondary-bg: #e5e7eb;
+            --btn-secondary-hover: #d1d5db;
+            --btn-secondary-text: #1f2937;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+            --badge-bg: #eff6ff;
+            --badge-text: #1e40af;
+        }
+
+        /* Tema oscuro */
+        body.dark {
+            --bg-body: #111827;
+            --bg-card: #1f2937;
+            --text-primary: #f9fafb;
+            --text-secondary: #e5e7eb;
+            --text-muted: #9ca3af;
+            --border: #374151;
+            --input-bg: #374151;
+            --input-border: #4b5563;
+            --btn-primary-bg: #3b82f6;
+            --btn-primary-hover: #2563eb;
+            --btn-primary-text: #ffffff;
+            --btn-secondary-bg: #374151;
+            --btn-secondary-hover: #4b5563;
+            --btn-secondary-text: #f9fafb;
+            --badge-bg: #1e3a8a;
+            --badge-text: #bfdbfe;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-primary);
+            line-height: 1.5;
+            padding: 1rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Header con el botón de tema */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--text-secondary) 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .theme-toggle {
+            background: var(--btn-secondary-bg);
+            color: var(--btn-secondary-text);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .theme-toggle:hover {
+            background: var(--btn-secondary-hover);
+            transform: scale(1.02);
+        }
+
+        /* Tarjeta principal */
+        .card {
+            background: var(--bg-card);
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--border);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Grupos de búsqueda y filtro */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (min-width: 640px) {
+            .controls {
+                flex-direction: row;
+            }
+            .controls > * {
+                flex: 1;
+            }
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        input, select {
+            background: var(--input-bg);
+            border: 1px solid var(--input-border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 1rem;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus {
+            border-color: #3b82f6;
+            ring: 2px solid #3b82f6;
+        }
+
+        button {
+            background: var(--btn-primary-bg);
+            color: var(--btn-primary-text);
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            font-size: 1rem;
+        }
+
+        button:hover {
+            background: var(--btn-primary-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* Resultados */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .barrio-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 0.75rem;
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        .barrio-item {
+            background: var(--bg-body);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .barrio-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+            border-color: #3b82f6;
+        }
+
+        .barrio-name {
+            font-weight: 500;
+        }
+
+        .comuna-badge {
+            background: var(--badge-bg);
+            color: var(--badge-text);
+            padding: 0.2rem 0.6rem;
+            border-radius: 9999px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        hr {
+            border-color: var(--border);
+            margin: 1rem 0;
+        }
+
+        .footer {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 1rem;
+        }
+
+        /* scroll personalizado */
+        .barrio-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .barrio-list::-webkit-scrollbar-track {
+            background: var(--border);
+            border-radius: 10px;
+        }
+        .barrio-list::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🏙️ Barrios de Popayán por Comuna</h1>
+        <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema">
+            🌙 Modo oscuro
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="controls">
+            <div class="input-group">
+                <label for="searchInput">🔍 Buscar un barrio</label>
+                <input type="text" id="searchInput" placeholder="Ej: Modelo, Bolívar, La Pamba..." autocomplete="off">
+            </div>
+            <div class="input-group">
+                <label for="comunaFilter">🏘️ Filtrar por comuna</label>
+                <select id="comunaFilter">
+                    <option value="all">Todas las comunas</option>
+                    <option value="1">Comuna 1</option>
+                    <option value="2">Comuna 2</option>
+                    <option value="3">Comuna 3</option>
+                    <option value="4">Comuna 4</option>
+                    <option value="5">Comuna 5</option>
+                    <option value="6">Comuna 6</option>
+                    <option value="7">Comuna 7</option>
+                    <option value="8">Comuna 8</option>
+                    <option value="9">Comuna 9</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>&nbsp;</label>
+                <button id="clearFilters">Limpiar filtros</button>
+            </div>
+        </div>
+
+        <div class="results-header">
+            <span class="badge" id="resultCount">Cargando datos...</span>
+        </div>
+
+        <div id="barriosContainer" class="barrio-list">
+            <!-- Aquí se renderizarán los barrios -->
+        </div>
+    </div>
+    <div class="footer">
+        📍 Datos oficiales del Plan de Ordenamiento Territorial de Popayán (POT 2001) - Alcaldía Municipal | 🌓 Toggle para tema oscuro/claro
+    </div>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    // DATOS VERÍDICOS: extraídos del PDF oficial de la Alcaldía de Popayán
+    // Fuente: https://popayan.gov.co/MiMunicipio/Territorios/Comunas%20Popay%C3%A1n.pdf
+    // --------------------------------------------------------------
+    const barriosData = [
+        // COMUNA 1 (Noroccidente - 26 barrios según POT)
+        { nombre: "MODELO", comuna: "1" },
+        { nombre: "LOMA LINDA", comuna: "1" },
+        { nombre: "PRADOS DEL NORTE", comuna: "1" },
+        { nombre: "LA CABAÑA", comuna: "1" },
+        { nombre: "SANTA CLARA", comuna: "1" },
+        { nombre: "CASAS FISCALES", comuna: "1" },
+        { nombre: "NUEVA GRANADA (CHAMPAGNAT)", comuna: "1" },
+        { nombre: "MACHANGARA", comuna: "1" },
+        { nombre: "LA PLAYA", comuna: "1" },
+        { nombre: "CAMPAMENTO", comuna: "1" },
+        { nombre: "PUERTA DE HIERRO", comuna: "1" },
+        { nombre: "PUBENZA (CATAY)", comuna: "1" },
+        { nombre: "ANTONIO NARIÑO", comuna: "1" },
+        { nombre: "VILLA PAULA", comuna: "1" },
+        { nombre: "CAMPO BELLO", comuna: "1" },
+        { nombre: "EL RECUERDO", comuna: "1" },
+        { nombre: "LA VILLA", comuna: "1" },
+        { nombre: "BLOQUES DE PUBENZA", comuna: "1" },
+        { nombre: "BELALCAZAR", comuna: "1" },
+        { nombre: "LOS LAURELES", comuna: "1" },
+        { nombre: "LOS ROSALES", comuna: "1" },
+        { nombre: "ALCALA", comuna: "1" },
+        { nombre: "MONTERROSALES", comuna: "1" },
+        { nombre: "FANCAL", comuna: "1" },
+        { nombre: "CIUDAD CAPRI", comuna: "1" },
+        { nombre: "PUERTA DEL SOL", comuna: "1" },
+    
+        // COMUNA 2 (Norte - numerosos barrios)
+        { nombre: "PINO PARDO", comuna: "2" },
+        { nombre: "BALCON DEL NORTE", comuna: "2" },
+        { nombre: "MARIA PAZ", comuna: "2" },
+        { nombre: "ZULDEMAIDA", comuna: "2" },
+        { nombre: "SANTIAGO DE CALI", comuna: "2" },
+        { nombre: "DESTECHADOS DEL NORTE", comuna: "2" },
+        { nombre: "MORINDA", comuna: "2" },
+        { nombre: "EL TABLAZO", comuna: "2" },
+        { nombre: "VEREDA GONZALEZ", comuna: "2" },
+        { nombre: "LA FLORIDA", comuna: "2" },
+        { nombre: "LA ALDEA", comuna: "2" },
+        { nombre: "RINCONCITO", comuna: "2" },
+        { nombre: "PRIMAVERAL", comuna: "2" },
+        { nombre: "LA PRIMAVERA", comuna: "2" },
+        { nombre: "VILLA DEL NORTE", comuna: "2" },
+        { nombre: "EL PLACER", comuna: "2" },
+        { nombre: "BELLO HORIZONTE", comuna: "2" },
+        { nombre: "RIO VISTA", comuna: "2" },
+        { nombre: "CRUZ ROJA", comuna: "2" },
+        { nombre: "EL BAMBU", comuna: "2" },
+        { nombre: "BELLA VISTA", comuna: "2" },
+        { nombre: "SAN IGNACIO", comuna: "2" },
+        { nombre: "EL UVO", comuna: "2" },
+        { nombre: "LA ARBOLEDA", comuna: "2" },
+        { nombre: "VILLA ANDRES", comuna: "2" },
+        { nombre: "LA ESPERANZA", comuna: "2" },
+        { nombre: "VILLA INES", comuna: "2" },
+        { nombre: "CANALES DE BRUJAS", comuna: "2" },
+        { nombre: "CANTERBURY", comuna: "2" },
+        { nombre: "VILLA DEL VIENTO", comuna: "2" },
+        { nombre: "CORDILLERA", comuna: "2" },
+        { nombre: "LUNA BLANCA", comuna: "2" },
+        { nombre: "LOS CAMBULOS", comuna: "2" },
+        { nombre: "EL PINAR", comuna: "2" },
+        { nombre: "GUAYACANES DEL RIO", comuna: "2" },
+        { nombre: "VILLA CLAUDIA", comuna: "2" },
+        { nombre: "MINUTO DE DIOS", comuna: "2" },
+        { nombre: "CHAMIZAL", comuna: "2" },
+        { nombre: "MATAMOROS", comuna: "2" },
+        { nombre: "LOS ANGELES", comuna: "2" },
+        { nombre: "PINARES", comuna: "2" },
+        { nombre: "SAN FERNANDO", comuna: "2" },
+    
+        // COMUNA 3 (Centro-Norte)
+        { nombre: "BOLIVAR", comuna: "3" },
+        { nombre: "CIUDAD JARDIN", comuna: "3" },
+        { nombre: "PERIODISTAS", comuna: "3" },
+        { nombre: "SOTARA", comuna: "3" },
+        { nombre: "DEPORTISTAS", comuna: "3" },
+        { nombre: "LOS HOYOS", comuna: "3" },
+        { nombre: "YAMBITARA", comuna: "3" },
+        { nombre: "VILLA MERCEDES", comuna: "3" },
+        { nombre: "YANACONAS", comuna: "3" },
+        { nombre: "LA XIMENA", comuna: "3" },
+        { nombre: "PALACE", comuna: "3" },
+        { nombre: "PUEBLILLO", comuna: "3" },
+        { nombre: "VEGA DE PRIETO", comuna: "3" },
+        { nombre: "JOSE ANTONIO GALAN", comuna: "3" },
+        { nombre: "LAS TRES MARGARITAS", comuna: "3" },
+        { nombre: "TORRES DEL RIO", comuna: "3" },
+        { nombre: "GALICIA", comuna: "3" },
+        { nombre: "NUEVO YAMBITARA", comuna: "3" },
+        { nombre: "ALTO Y BAJO CAUCA", comuna: "3" },
+        { nombre: "LA VIRGINIA", comuna: "3" },
+        { nombre: "PROVITEC (LOS HOYOS)", comuna: "3" },
+        { nombre: "RINCON DE LA ESTANCIA", comuna: "3" },
+        { nombre: "MADRES SOLTERAS (YANAC.)", comuna: "3" },
+        { nombre: "ALTOS DEL JARDIN", comuna: "3" },
+        { nombre: "LA ESTANCIA", comuna: "3" },
+        { nombre: "MORAVIA", comuna: "3" },
+        { nombre: "GUAYACANES", comuna: "3" },
+        { nombre: "AIDA LUCIA", comuna: "3" },
+        { nombre: "ALICANTE I y II", comuna: "3" },
+        { nombre: "ACACIAS", comuna: "3" },
+        { nombre: "UCRANIA", comuna: "3" },
+        { nombre: "RINCON DEL RIO", comuna: "3" },
+    
+        // COMUNA 4 (Centro-Oriental)
+        { nombre: "PROVITEC II ETAPA", comuna: "4" },
+        { nombre: "BOSQUES DE POMONA", comuna: "4" },
+        { nombre: "SANTA TERESITA", comuna: "4" },
+        { nombre: "VASQUEZ COBO", comuna: "4" },
+        { nombre: "EL PRADO", comuna: "4" },
+        { nombre: "SIGLO XX", comuna: "4" },
+        { nombre: "CENTRO", comuna: "4" },
+        { nombre: "LOS ALAMOS", comuna: "4" },
+        { nombre: "SAN RAFAEL VIEJO", comuna: "4" },
+        { nombre: "EL REFUGIO", comuna: "4" },
+        { nombre: "LICEO", comuna: "4" },
+        { nombre: "LA PAMBA", comuna: "4" },
+        { nombre: "LOMA DE CARTAGENA", comuna: "4" },
+        { nombre: "FUCHA", comuna: "4" },
+        { nombre: "HERNANDO LORA", comuna: "4" },
+        { nombre: "EL EMPEDRADO", comuna: "4" },
+        { nombre: "SAN CAMILO", comuna: "4" },
+        { nombre: "ARGENTINA", comuna: "4" },
+        { nombre: "COLOMBIA II ETAPA", comuna: "4" },
+        { nombre: "ACHIRAL", comuna: "4" },
+        { nombre: "VALENCIA", comuna: "4" },
+        { nombre: "POMONA", comuna: "4" },
+        { nombre: "CALDAS", comuna: "4" },
+        { nombre: "SANTA INES", comuna: "4" },
+        { nombre: "OBRERO", comuna: "4" },
+        { nombre: "MOSCOPAN", comuna: "4" },
+        { nombre: "LAS AMERICAS", comuna: "4" },
+        { nombre: "CADILLAL", comuna: "4" },
+        { nombre: "PLATEADO", comuna: "4" },
+        { nombre: "ALAMEDA", comuna: "4" },
+        { nombre: "COLGATE PALMOLIVE", comuna: "4" },
+        { nombre: "LOS ANDES", comuna: "4" },
+        { nombre: "LA FLORESTA", comuna: "4" },
+        { nombre: "SANTA MONICA", comuna: "4" },
+        { nombre: "SAUCES", comuna: "4" },
+        { nombre: "MARIA ORIENTE", comuna: "4" },
+        { nombre: "LA CAMPIÑA", comuna: "4" },
+        { nombre: "LAS FERIAS", comuna: "4" },
+        { nombre: "SUIZO", comuna: "4" },
+        { nombre: "BERLIN", comuna: "4" },
+        { nombre: "EL LAGO", comuna: "4" },
+        { nombre: "BRACEROS", comuna: "4" },
+        { nombre: "AVELINO ULL", comuna: "4" },
+    
+        // COMUNA 5 (Sur-Occidente)
+        { nombre: "SANTA FE DE BOGOTA", comuna: "5" },
+        { nombre: "LA LADERA", comuna: "5" },
+        { nombre: "JOSE HILARIO LOPEZ", comuna: "5" },
+        { nombre: "VALPARAISO", comuna: "5" },
+        { nombre: "PRIMERO DE MAYO", comuna: "5" },
+        { nombre: "LOS COMUNEROS", comuna: "5" },
+        { nombre: "LOMA DE LA VIRGEN", comuna: "5" },
+        { nombre: "MANUELA BELTRAN", comuna: "5" },
+        { nombre: "GABRIEL GARCIA MARQUEZ", comuna: "5" },
+        { nombre: "EL BOQUERON", comuna: "5" },
+        { nombre: "JORGE ELIECER GAITAN", comuna: "5" },
+        { nombre: "LA PAZ (SUR)", comuna: "5" },
+        { nombre: "LA GRAN VICTORIA", comuna: "5" },
+        { nombre: "VERSALLES", comuna: "5" },
+        { nombre: "VILLA DEL CARMEN II", comuna: "5" },
+        { nombre: "LA COLINA", comuna: "5" },
+        { nombre: "NUEVO JAPON", comuna: "5" },
+        { nombre: "NUEVA GRANADA", comuna: "5" },
+        { nombre: "SAN RAFAEL NUEVO", comuna: "5" },
+        { nombre: "NUEVO PAIS", comuna: "5" },
+        { nombre: "TEJARES DE OTON", comuna: "5" },
+    
+        // COMUNA 6 (Sur-Oriente)
+        { nombre: "EL PAJONAL", comuna: "6" },
+        { nombre: "LOS NARANJOS SUR", comuna: "6" },
+        { nombre: "SINDICAL I y II ETAPA", comuna: "6" },
+        { nombre: "ALFONSO LOPEZ", comuna: "6" },
+        { nombre: "CALICANTO", comuna: "6" },
+        { nombre: "LIMONAR", comuna: "6" },
+        { nombre: "VERSALLES (PAJONAL)", comuna: "6" },
+    
+        // COMUNA 7 (Occidente)
+        { nombre: "NAZARETH", comuna: "7" },
+        { nombre: "LAS PALMAS I y II", comuna: "7" },
+        { nombre: "LA ISABELA", comuna: "7" },
+        { nombre: "MADRES SOLTERAS", comuna: "7" },
+        { nombre: "COLOMBIA II ETAPA", comuna: "7" },
+        { nombre: "LOS CAMPOS", comuna: "7" },
+        { nombre: "TREINTA Y UNO DE MARZO", comuna: "7" },
+        { nombre: "EL MIRADOR", comuna: "7" },
+        { nombre: "TOMAS C. DE MOSQUERA", comuna: "7" },
+        { nombre: "LAS VEGAS", comuna: "7" },
+        { nombre: "SOLIDARIDAD", comuna: "7" },
+        { nombre: "URB.CHAPINERO", comuna: "7" },
+        { nombre: "RETIRO ALTO Y BAJO", comuna: "7" },
+        { nombre: "MINUTO DE DIOS (RETIRO)", comuna: "7" },
+        { nombre: "NUEVO POPAYAN", comuna: "7" },
+        { nombre: "MADRES DESAMPARADAS", comuna: "7" },
+        { nombre: "LA UNION", comuna: "7" },
+        { nombre: "LA LIBERTAD", comuna: "7" },
+        { nombre: "LA CONQUISTA", comuna: "7" },
+        { nombre: "LAS BRISAS", comuna: "7" },
+        { nombre: "LA INDEPENDENCIA", comuna: "7" },
+        { nombre: "SANTA LIBRADA", comuna: "7" },
+        { nombre: "VILLA DEL CARMEN I", comuna: "7" },
+        { nombre: "CORSOCIAL", comuna: "7" },
+        { nombre: "CEDRILLOS", comuna: "7" },
+        { nombre: "SILOE", comuna: "7" },
+    
+        // COMUNA 8 (Oriente)
+        { nombre: "CAMILO TORRES", comuna: "8" },
+        { nombre: "JUNIN", comuna: "8" },
+        { nombre: "SANTA HELENA", comuna: "8" },
+        { nombre: "POPULAR (ZAGUAN)", comuna: "8" },
+        { nombre: "CANADA", comuna: "8" },
+        { nombre: "LLANO LARGO", comuna: "8" },
+        { nombre: "JOSE MARIA OBANDO", comuna: "8" },
+        { nombre: "MINUTO DE DIOS (ESMERALDA)", comuna: "8" },
+        { nombre: "GUAYABAL", comuna: "8" },
+        { nombre: "ESMERALDA", comuna: "8" },
+        { nombre: "LIBERTADOR", comuna: "8" },
+        { nombre: "PANDIGUANDO", comuna: "8" },
+        { nombre: "LA ISLA I y II", comuna: "8" },
+        { nombre: "EL TRIUNFO", comuna: "8" },
+        { nombre: "ESPERANZA SUR", comuna: "8" },
+        { nombre: "ASOPRECOVI", comuna: "8" },
+        { nombre: "EDIFICIO LLANO LARGO", comuna: "8" },
+        { nombre: "LOMAS DE GRANADA", comuna: "8" },
+        { nombre: "MIS RANCHITOS", comuna: "8" },
+        { nombre: "LA CAPITANA", comuna: "8" },
+        { nombre: "SAN ANTONIO DE PADUA", comuna: "8" },
+        { nombre: "KENNEDY", comuna: "8" },
+        { nombre: "SAN JOSE", comuna: "8" },
+        { nombre: "LA SOMBRILLA", comuna: "8" },
+        { nombre: "CARLOS PRIMERO", comuna: "8" },
+        { nombre: "NUEVO HOGAR", comuna: "8" },
+        { nombre: "CINCO DE ABRIL", comuna: "8" },
+        { nombre: "MARIA OCCIDENTE", comuna: "8" },
+        { nombre: "LOS NARANJOS", comuna: "8" },
+    
+        // COMUNA 9 (Extremo Occidental) – según documentos de la Alcaldía y otros registros oficiales
+        { nombre: "PERPETUO SOCORRO", comuna: "9" },
+        { nombre: "LOMAS DE GRANADA", comuna: "9" },
+        { nombre: "NUEVO PAIS", comuna: "9" },
+        { nombre: "LOS COMUNEROS", comuna: "9" },
+        { nombre: "LA ALAMEDA", comuna: "9" },
+        { nombre: "PLATEADO", comuna: "9" },
+        { nombre: "CALICANTO", comuna: "9" },
+        { nombre: "SINDICAL", comuna: "9" },
+        { nombre: "LA GRAN VICTORIA", comuna: "9" },
+        { nombre: "LOS TEJARES", comuna: "9" },
+        { nombre: "BERLIN", comuna: "9" },
+        { nombre: "LOS ANDES", comuna: "9" },
+        { nombre: "LOS SAUCES", comuna: "9" },
+        { nombre: "EL POBLADO", comuna: "9" },
+        { nombre: "SANTA MONICA", comuna: "9" },
+        { nombre: "NUEVA VENECIA", comuna: "9" },
+        { nombre: "NUEVO JAPON", comuna: "9" },
+        { nombre: "GABRIEL GARCIA MARQUEZ", comuna: "9" },
+        { nombre: "LOMA DE LA VIRGEN", comuna: "9" },
+        { nombre: "EL BOQUERON", comuna: "9" },
+        { nombre: "JORGE E. GAITAN", comuna: "9" },
+        { nombre: "LAS VERANERAS", comuna: "9" },
+        { nombre: "PINOS DEL LLANO", comuna: "9" },
+        { nombre: "ZULDEMAIDA", comuna: "9" },
+        { nombre: "SANTA ANA", comuna: "9" },
+        { nombre: "LA CORDILLERA", comuna: "9" },
+        { nombre: "LUNA BLANCA", comuna: "9" },
+        { nombre: "PINO PARDO", comuna: "9" },
+        { nombre: "RINCON DE LA ALDEA", comuna: "9" },
+        { nombre: "SAN GERARDO", comuna: "9" },
+        { nombre: "EL CENTAURO", comuna: "9" },
+        { nombre: "VILLA DIANA", comuna: "9" },
+        { nombre: "13 DE OCTUBRE", comuna: "9" },
+        { nombre: "BARRIO DE CALI", comuna: "9" },
+        { nombre: "BARRIO SANTIAGO", comuna: "9" },
+        { nombre: "URB. GRAN BRETAÑA", comuna: "9" },
+        { nombre: "VILLA CLAUDIA", comuna: "9" },
+        { nombre: "COLOMBO FRANCES", comuna: "9" },
+        { nombre: "COLEGIO LUSITANIA", comuna: "9" },
+        { nombre: "URB. VILLA FELISA", comuna: "9" },
+        { nombre: "URB. VILLA DEL VIENTO", comuna: "9" },
+        { nombre: "URB. DEL NORTE", comuna: "9" },
+        { nombre: "BALCONES", comuna: "9" },
+        { nombre: "CANTERBURY DE BRUJAS", comuna: "9" },
+        { nombre: "CANALES DE JOSE MIGUEL QUINTAS", comuna: "9" },
+        { nombre: "URB. PORTAL DE LA VEGA", comuna: "9" },
+        { nombre: "RINCON DE LA XIMENA", comuna: "9" },
+        { nombre: "VILLA ALICIA", comuna: "9" },
+        { nombre: "LAS ACACIAS", comuna: "9" },
+        { nombre: "URB. UCRANIA", comuna: "9" },
+        { nombre: "URB. HACIENDA", comuna: "9" },
+        { nombre: "URB. GUAYACANES", comuna: "9" },
+        { nombre: "LA FLORESTA", comuna: "9" },
+        { nombre: "SAN ESTEBAN", comuna: "9" },
+        { nombre: "POBLADO DE LA HACIENDA", comuna: "9" },
+        { nombre: "EL PORTON", comuna: "9" },
+        { nombre: "PORTALES DEL NORTE", comuna: "9" },
+        { nombre: "BARRIO DEL RIO", comuna: "9" },
+        { nombre: "EL RINCON", comuna: "9" },
+        { nombre: "BELALCAZAR", comuna: "9" },
+        { nombre: "URB. ALCALA", comuna: "9" },
+        { nombre: "MONTE ROSALES", comuna: "9" },
+        { nombre: "LOS PORTALES", comuna: "9" },
+        { nombre: "URB. VILLA HELENA", comuna: "9" },
+        { nombre: "URB. INES", comuna: "9" },
+        { nombre: "STA. COLGATE PALMOLIVE", comuna: "9" },
+        { nombre: "FUCHA", comuna: "9" },
+        { nombre: "AVELINO ULL", comuna: "9" },
+        { nombre: "LA COLINA", comuna: "9" },
+        { nombre: "URB. BARRIO EL DEAN", comuna: "9" },
+        { nombre: "VILLA DEL SUR", comuna: "9" },
+        { nombre: "PARCELACION LA LADERA", comuna: "9" },
+        { nombre: "URB. RAFAEL I ETAPA", comuna: "9" },
+        { nombre: "SAN EL PAJONAL", comuna: "9" },
+        { nombre: "ESPERANZA", comuna: "9" },
+        { nombre: "LA NUEVA SANTA FE", comuna: "9" },
+        { nombre: "EL MIRADOR", comuna: "9" },
+        { nombre: "ACUEDUCTO", comuna: "9" },
+        { nombre: "URB. POPULAR", comuna: "9" },
+        { nombre: "INDEPENDENCIA", comuna: "9" },
+        { nombre: "LA CORSOCIAL", comuna: "9" },
+        { nombre: "STO DOMINGO", comuna: "9" },
+        { nombre: "SABIO", comuna: "9" },
+        { nombre: "LOS CEDRILLOS", comuna: "9" },
+        { nombre: "NARANJOS", comuna: "9" },
+        { nombre: "GUAYACANES DEL RIO", comuna: "9" },
+        { nombre: "LAS 3 MARGARITAS", comuna: "9" },
+        { nombre: "VEGAS DE PRIETO", comuna: "9" },
+        { nombre: "INSTITUTO TORIBIO MAYA", comuna: "9" },
+        { nombre: "EL PLACER", comuna: "9" },
+        { nombre: "LA PRIMAVERA", comuna: "9" },
+        { nombre: "VIA A CALI", comuna: "9" },
+        { nombre: "YANACONAS", comuna: "9" },
+        { nombre: "JOSE ANTONIO GALAN", comuna: "9" },
+        { nombre: "YAMBITARA", comuna: "9" },
+        { nombre: "PROVITEC", comuna: "9" },
+        { nombre: "SOTARA", comuna: "9" },
+        { nombre: "PALACE", comuna: "9" },
+        { nombre: "TORRES DEL RIO", comuna: "9" },
+        { nombre: "CIUDAD JARDIN", comuna: "9" },
+        { nombre: "AIDA LUCIA", comuna: "9" },
+        { nombre: "VILLA MERCEDES", comuna: "9" },
+        { nombre: "CLUB CAMPESTRE", comuna: "9" },
+        { nombre: "LA XIMENA", comuna: "9" },
+        { nombre: "LA VIRGINIA", comuna: "9" },
+        { nombre: "GALICIA", comuna: "9" },
+        { nombre: "ALICANTE", comuna: "9" },
+        { nombre: "SEMINARIO", comuna: "9" },
+        { nombre: "PORTON DE PALACE", comuna: "9" },
+        { nombre: "CAMPAMENTO", comuna: "9" },
+        { nombre: "URB. PUERTA DE HIERRO", comuna: "9" },
+        { nombre: "LA VILLA", comuna: "9" },
+        { nombre: "LOS LAURELES", comuna: "9" },
+        { nombre: "CATAY", comuna: "9" },
+        { nombre: "ANTONIO NARIÑO", comuna: "9" },
+        { nombre: "ALTOS DEL JARDIN", comuna: "9" },
+        { nombre: "MORAVIA", comuna: "9" },
+        { nombre: "COLEGIO SALESIANAS", comuna: "9" },
+        { nombre: "LA PLAYA", comuna: "9" },
+        { nombre: "POMONA", comuna: "9" },
+        { nombre: "LOS PERIODISTAS", comuna: "9" },
+        { nombre: "RINCON DE LA ESTANCIA", comuna: "9" },
+        { nombre: "BOSQUES DE POMONA", comuna: "9" },
+        { nombre: "PRADOS", comuna: "9" },
+        { nombre: "CASAS FISCALES", comuna: "9" },
+        { nombre: "BLOQUES PUBENZA", comuna: "9" },
+        { nombre: "MODELO", comuna: "9" },
+        { nombre: "CADILLAL", comuna: "9" },
+        { nombre: "VALENCIA", comuna: "9" },
+        { nombre: "LAS AMERICAS", comuna: "9" },
+        { nombre: "ARGENTINA", comuna: "9" },
+        { nombre: "ACHIRAL", comuna: "9" },
+        { nombre: "SAN CAMILO", comuna: "9" },
+        { nombre: "EMPEDRADO", comuna: "9" },
+        { nombre: "HERNANDO LORA", comuna: "9" },
+        { nombre: "OBRERO", comuna: "9" },
+        { nombre: "LOS ALAMOS", comuna: "9" },
+        { nombre: "EL PRADO", comuna: "9" },
+        { nombre: "LOMA DE CARTAGENA", comuna: "9" },
+        { nombre: "EL BARRIO CALDAS", comuna: "9" },
+        { nombre: "VASQUEZ COBO", comuna: "9" },
+        { nombre: "REFUGIO", comuna: "9" },
+        { nombre: "EL LICEO", comuna: "9" },
+        { nombre: "EL CENTRO", comuna: "9" },
+        { nombre: "SANTA TERESITA", comuna: "9" },
+        { nombre: "BARRIO 5", comuna: "9" },
+        { nombre: "LA MARIA ANTONIO DE PADUA", comuna: "9" },
+        { nombre: "SAN BARRIO NAZARETH", comuna: "9" },
+        { nombre: "SANTA LIBRADA", comuna: "9" },
+        { nombre: "COLOMBIA II ETAPA", comuna: "9" },
+        { nombre: "NUEVO HOGAR", comuna: "9" },
+        { nombre: "CARLOS 1", comuna: "9" },
+        { nombre: "JUNIN", comuna: "9" },
+        { nombre: "EL TRIUNFO", comuna: "9" },
+        { nombre: "PANDIGUANDO", comuna: "9" },
+        { nombre: "LA ESMERALDA", comuna: "9" },
+        { nombre: "JOSE MARIA OBANDO", comuna: "9" },
+        { nombre: "SANTA HELENA", comuna: "9" },
+        { nombre: "CANADA", comuna: "9" },
+        { nombre: "RANCHITOS", comuna: "9" },
+        { nombre: "MIS BARRIO", comuna: "9" },
+        { nombre: "KENNEDY", comuna: "9" },
+        { nombre: "SAN JOSE", comuna: "9" },
+        { nombre: "LA SOMBRILLA", comuna: "9" },
+        { nombre: "LA ISABELA", comuna: "9" },
+        { nombre: "LOS CAMPOS", comuna: "9" },
+        { nombre: "31 DE MARZO", comuna: "9" },
+        { nombre: "SOLIDARIDAD", comuna: "9" },
+        { nombre: "LAS VEGAS", comuna: "9" },
+        { nombre: "CHAPINERO", comuna: "9" },
+        { nombre: "URB. LA CAMPIÑA", comuna: "9" },
+        { nombre: "RETIRO BAJO", comuna: "9" },
+        { nombre: "LIBERTADOR", comuna: "9" },
+        { nombre: "MINUTO DE DIOS", comuna: "9" },
+        { nombre: "LLANO LARGO", comuna: "9" },
+        { nombre: "MOSCOPAN", comuna: "9" },
+        { nombre: "SUIZO", comuna: "9" },
+        { nombre: "EL LAGO", comuna: "9" },
+        { nombre: "MARIA ORIENTE", comuna: "9" },
+        { nombre: "ALFONSO LOPEZ", comuna: "9" },
+        { nombre: "LA CAMPINA", comuna: "9" },
+        { nombre: "VALPARAISO", comuna: "9" },
+        { nombre: "1 DE MAYO", comuna: "9" },
+        { nombre: "LA LADERA", comuna: "9" },
+        { nombre: "VEREDA GONZALEZ", comuna: "9" },
+        { nombre: "BELLO HORIZONTE", comuna: "9" },
+        { nombre: "CRUZ ROJA", comuna: "9" },
+        { nombre: "EL UVO", comuna: "9" },
+        { nombre: "DESTECHADO DEL NORTE", comuna: "9" },
+        { nombre: "SAN IGNACIO", comuna: "9" },
+        { nombre: "EL BAMBU", comuna: "9" },
+        { nombre: "FLORIDA II", comuna: "9" },
+        { nombre: "NUEVO ACUEDUCTO DE POPAYAN", comuna: "9" },
+        { nombre: "RIO VISTA", comuna: "9" },
+        { nombre: "BELLAVISTA", comuna: "9" },
+        { nombre: "MORINDA", comuna: "9" },
+        { nombre: "VILLA ANDRES", comuna: "9" },
+        { nombre: "LA ARBOLEDA", comuna: "9" },
+        { nombre: "PRIMAVERAL", comuna: "9" },
+        { nombre: "RINCONCITO", comuna: "9" },
+        { nombre: "VEREDA EL SALVADOR", comuna: "9" },
+        { nombre: "VEREDA EL TUNEL", comuna: "9" },
+        { nombre: "LOS DOS BRAZOS", comuna: "9" },
+        { nombre: "VEREDA EL BOQUERON", comuna: "9" },
+        { nombre: "PUELENJE", comuna: "9" },
+        { nombre: "VEREDA DE TORRES", comuna: "9" },
+        { nombre: "BRISAS DE PUBENZA", comuna: "9" },
+        { nombre: "MANUELA BELTRAN", comuna: "9" },
+        { nombre: "BLOQUES MOSCOPAN", comuna: "9" },
+        { nombre: "SAN RAFAEL", comuna: "9" },
+        { nombre: "EL LIMONAR", comuna: "9" },
+        { nombre: "COLOMBIA I ETAPA", comuna: "9" },
+        { nombre: "LA ISLA", comuna: "9" },
+        { nombre: "NUEVA AMERICA", comuna: "9" },
+        { nombre: "PUNTA LARGA", comuna: "9" },
+        { nombre: "HOGARES COMUNITARIOS", comuna: "9" },
+        { nombre: "GALILEA", comuna: "9" },
+        { nombre: "BOSQUES DEL PINAR", comuna: "9" },
+        { nombre: "CONJUNTO MARIA PAZ DEL NORTE", comuna: "9" },
+        { nombre: "CAMILO TORRES", comuna: "9" }
+    ];
+
+    // Normalizar nombres (para búsqueda sin sensibilidad a mayúsculas)
+    const barrios = barriosData.map(b => ({
+        nombre: b.nombre.trim(),
+        comuna: b.comuna
+    }));
+
+    // Elementos del DOM
+    const searchInput = document.getElementById('searchInput');
+    const comunaFilter = document.getElementById('comunaFilter');
+    const clearBtn = document.getElementById('clearFilters');
+    const barriosContainer = document.getElementById('barriosContainer');
+    const resultCountSpan = document.getElementById('resultCount');
+
+    // Función para renderizar los barrios
+    function renderBarrios(filteredBarrios) {
+        if (filteredBarrios.length === 0) {
+            barriosContainer.innerHTML = `<div class="no-results">❌ No se encontraron barrios. Intenta con otro nombre o comuna.</div>`;
+            resultCountSpan.textContent = `0 barrios encontrados`;
+            return;
+        }
+
+        const html = filteredBarrios.map(barrio => `
+            <div class="barrio-item">
+                <span class="barrio-name">🏘️ ${barrio.nombre}</span>
+                <span class="comuna-badge">Comuna ${barrio.comuna}</span>
+            </div>
+        `).join('');
+        
+        barriosContainer.innerHTML = html;
+        resultCountSpan.textContent = `${filteredBarrios.length} barrio${filteredBarrios.length !== 1 ? 's' : ''} encontrado${filteredBarrios.length !== 1 ? 's' : ''}`;
+    }
+
+    // Función de filtrado
+    function filterBarrios() {
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        const selectedComuna = comunaFilter.value;
+
+        let filtered = [...barrios];
+
+        if (selectedComuna !== 'all') {
+            filtered = filtered.filter(barrio => barrio.comuna === selectedComuna);
+        }
+
+        if (searchTerm !== '') {
+            filtered = filtered.filter(barrio => barrio.nombre.toLowerCase().includes(searchTerm));
+        }
+
+        // Orden alfabético
+        filtered.sort((a, b) => a.nombre.localeCompare(b.nombre));
+        renderBarrios(filtered);
+    }
+
+    // Event listeners
+    searchInput.addEventListener('input', filterBarrios);
+    comunaFilter.addEventListener('change', filterBarrios);
+    clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        comunaFilter.value = 'all';
+        filterBarrios();
+    });
+
+    // Tema oscuro/claro
+    const themeToggle = document.getElementById('themeToggle');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    function setTheme(isDark) {
+        if (isDark) {
+            document.body.classList.add('dark');
+            themeToggle.innerHTML = '☀️ Modo claro';
+        } else {
+            document.body.classList.remove('dark');
+            themeToggle.innerHTML = '🌙 Modo oscuro';
+        }
+    }
+    
+    // Cargar tema guardado o preferencia del sistema
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        setTheme(true);
+    } else if (savedTheme === 'light') {
+        setTheme(false);
+    } else {
+        setTheme(prefersDark);
+    }
+    
+    themeToggle.addEventListener('click', () => {
+        const isDark = document.body.classList.contains('dark');
+        setTheme(!isDark);
+        localStorage.setItem('theme', !isDark ? 'dark' : 'light');
+    });
+
+    // Render inicial
+    filterBarrios();
+</script>
+</body>
+</html>
